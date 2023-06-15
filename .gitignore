@@ -1,0 +1,7 @@
+.env
+.build/
+.idea/
+vendor/
+tmp/
+temp/
+.vscode/
