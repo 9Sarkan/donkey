@@ -14,6 +14,7 @@ type envReader struct {
 	prefix       string
 }
 
+// NewEnvReader create a new environment variable reader
 func NewEnvReader(configStruct any) (*envReader, error) {
 	if reflect.TypeOf(configStruct).Elem().Kind() != reflect.Struct {
 		return nil, fmt.Errorf("destination must be a struct")
@@ -23,14 +24,17 @@ func NewEnvReader(configStruct any) (*envReader, error) {
 	}, nil
 }
 
+// SetPrefix for each env
 func (r *envReader) SetPrefix(prefix string) {
 	r.prefix = prefix
 }
 
+// SetReplacer for fields name
 func (r *envReader) SetReplacer(replacer *strings.Replacer) {
 	r.replacer = replacer
 }
 
+// Read config and save it in config object
 func (r *envReader) Read() error {
 	return r.readStructFields(r.prefix, r.configStruct)
 }
@@ -47,41 +51,36 @@ func (r *envReader) readStructFields(prefix string, st any) error {
 		tagValues := strings.Split(value, ",")
 
 		var name string
-		required := false
 
-		if len(tagValues) >= 1 {
-			name = tagValues[0]
-		} else {
+		if !(len(tagValues) >= 1 && tagValues[0] != "-") {
 			continue
 		}
+		name = tagValues[0]
 
-		if len(tagValues) >= 2 {
-			required = tagValues[1] == "required"
+		// generate env key
+		if r.replacer != nil {
+			name = r.replacer.Replace(name)
 		}
-
-		// check field type
-		envKey := strings.ToUpper(prefix + r.replacer.Replace(name))
+		envKey := strings.ToUpper(prefix + name)
 
 		// if it is a struct go to find all of its fields
-		if field.Type.Kind() == reflect.Struct {
+		fieldKind := field.Type.Kind()
+		if fieldKind == reflect.Struct {
 			if err := r.readStructFields(envKey+"_", reflect.ValueOf(st).Elem().Field(i).Addr().Interface()); err != nil {
 				return err
 			}
 			continue
 		}
-		if field.Type.Kind() == reflect.Pointer {
+		if fieldKind == reflect.Pointer {
 			return fmt.Errorf("unsupported type")
 		}
 
 		envValue := os.Getenv(envKey)
 		if envValue == "" {
-			if required {
-				return fmt.Errorf("%s value is required", name)
-			}
 			continue
 		}
 
-		switch field.Type.Kind() {
+		switch fieldKind {
 		case reflect.String:
 			reflect.ValueOf(st).Elem().Field(i).SetString(envValue)
 		case reflect.Int64, reflect.Int32, reflect.Int16, reflect.Int8, reflect.Int:
