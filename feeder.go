@@ -39,6 +39,12 @@ func fieldFeeder(field reflect.Value, value string) error {
 			return fmt.Errorf("invalid value for %s, %w", value, err)
 		}
 		field.SetInt(intValue)
+	case reflect.Float64, reflect.Float32:
+		floatValue, err := strconv.ParseFloat(value, 64)
+		if err != nil {
+			return fmt.Errorf("failed to convert %s to float, err: %w", value, err)
+		}
+		field.SetFloat(floatValue)
 	case reflect.Bool:
 		boolValue, err := strconv.ParseBool(value)
 		if err != nil {
