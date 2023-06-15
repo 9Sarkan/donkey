@@ -1,0 +1,3 @@
+# Donkey - A Flexible Configuration Reader and Manager for Go
+
+Donkey is a powerful and flexible package for reading and managing configurations in Go applications. It provides a simple and intuitive API to load and access configuration values from various sources, such as environment variables, JSON files, YAML files, or even remote configuration services. With Donkey, you can easily centralize and manage your application's configuration settings, making it more maintainable and scalable.
