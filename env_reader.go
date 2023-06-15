@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"reflect"
-	"strconv"
 	"strings"
 )
 
@@ -61,6 +60,7 @@ func (r *envReader) readStructFields(prefix string, st any) error {
 		if r.replacer != nil {
 			name = r.replacer.Replace(name)
 		}
+
 		envKey := strings.ToUpper(prefix + name)
 
 		// if it is a struct go to find all of its fields
@@ -71,6 +71,8 @@ func (r *envReader) readStructFields(prefix string, st any) error {
 			}
 			continue
 		}
+
+		// pointer field not supported yet
 		if fieldKind == reflect.Pointer {
 			return fmt.Errorf("unsupported type")
 		}
@@ -80,23 +82,8 @@ func (r *envReader) readStructFields(prefix string, st any) error {
 			continue
 		}
 
-		switch fieldKind {
-		case reflect.String:
-			reflect.ValueOf(st).Elem().Field(i).SetString(envValue)
-		case reflect.Int64, reflect.Int32, reflect.Int16, reflect.Int8, reflect.Int:
-			intValue, err := strconv.ParseInt(envValue, 10, 64)
-			if err != nil {
-				return fmt.Errorf("invalid value for %s, %w", envKey, err)
-			}
-			reflect.ValueOf(st).Elem().Field(i).SetInt(intValue)
-		case reflect.Bool:
-			boolValue, err := strconv.ParseBool(envValue)
-			if err != nil {
-				return fmt.Errorf("invalid value for %s, %w", envKey, err)
-			}
-			reflect.ValueOf(st).Elem().Field(i).SetBool(boolValue)
-		default:
-			return fmt.Errorf("unsupported type: %s", field.Type.String())
+		if err := fieldFeeder(reflect.ValueOf(st).Elem().Field(i), envValue); err != nil {
+			return err
 		}
 	}
 	return nil
