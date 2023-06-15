@@ -30,6 +30,16 @@ func fieldFeeder(field reflect.Value, value string) error {
 		return nil
 	}
 
+	if reflect.DeepEqual(field.Kind(), reflect.ValueOf(time.Now()).Kind()) {
+		// field is a time.Time
+		dateTime, err := time.Parse(DateTimeLayout, value)
+		if err != nil {
+			return fmt.Errorf("failed to parse %s with '%s' layout, err: %w", value, DateTimeLayout, err)
+		}
+		field.Set(reflect.ValueOf(dateTime))
+		return nil
+	}
+
 	switch field.Kind() {
 	case reflect.String:
 		field.SetString(value)
